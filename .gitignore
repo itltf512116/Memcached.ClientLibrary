@@ -3,3 +3,8 @@
 ################################################################################
 
 /.vs/Memcached.ClientLibrary/v15
+/ClassLibrary1.Test/.vs/ClassLibrary1.Test/v15/Server/sqlite3
+/ClassLibrary1.Test/bin/Debug/netcoreapp2.1
+/ClassLibrary1.Test/obj
+/Memcached.ClientLibrary/bin/Debug/netstandard2.0
+/Memcached.ClientLibrary/obj

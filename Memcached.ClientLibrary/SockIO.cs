@@ -1,14 +1,11 @@
 using System;
-using System.Collections;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Resources;
 using System.Text;
 using System.Threading;
-
-using log4net;
-
+using Memcached.ClientLibrary.Logging;
 
 namespace Memcached.ClientLibrary
 {
@@ -20,7 +17,7 @@ namespace Memcached.ClientLibrary
     public class SockIO
     {
         // logger
-        private static ILog Log = LogManager.GetLogger(typeof(SockIO));
+        private static ILog Log = LogProvider.GetLogger(typeof(SockIO));
 
         // id generator.  Gives ids to all the SockIO instances
         private static int IdGenerator;
@@ -178,10 +175,10 @@ namespace Memcached.ClientLibrary
         /// </summary>
         public void TrueClose()
         {
-			if(Log.IsDebugEnabled)
-			{
-				Log.Debug(GetLocalizedString("true close socket").Replace("$$Socket$$", ToString()).Replace("$$Lifespan$$", DateTime.Now.Subtract(_created).ToString()));
-			}
+            if (Log.IsDebugEnabled())
+            {
+                Log.Debug(GetLocalizedString("true close socket").Replace("$$Socket$$", ToString()).Replace("$$Lifespan$$", DateTime.Now.Subtract(_created).ToString()));
+            }
 
             bool err = false;
             StringBuilder errMsg = new StringBuilder();
@@ -200,20 +197,20 @@ namespace Memcached.ClientLibrary
                 }
                 catch (IOException ioe)
                 {
-					if(Log.IsErrorEnabled)
-					{
-						Log.Error(GetLocalizedString("error closing socket").Replace("$$ToString$$", ToString()).Replace("$$Host$$", Host), ioe);
-					}
+                    if (Log.IsErrorEnabled())
+                    {
+                        Log.Error(GetLocalizedString("error closing socket").Replace("$$ToString$$", ToString()).Replace("$$Host$$", Host), ioe);
+                    }
                     errMsg.Append(GetLocalizedString("error closing socket").Replace("$$ToString$$", ToString()).Replace("$$Host$$", Host) + System.Environment.NewLine);
                     errMsg.Append(ioe.ToString());
                     err = true;
                 }
                 catch (SocketException soe)
                 {
-					if(Log.IsErrorEnabled)
-					{
-						Log.Error(GetLocalizedString("error closing socket").Replace("$$ToString$$", ToString()).Replace("$$Host$$", Host), soe);
-					}
+                    if (Log.IsErrorEnabled())
+                    {
+                        Log.Error(GetLocalizedString("error closing socket").Replace("$$ToString$$", ToString()).Replace("$$Host$$", Host), soe);
+                    }
                     errMsg.Append(GetLocalizedString("error closing socket").Replace("$$ToString$$", ToString()).Replace("$$Host$$", Host) + System.Environment.NewLine);
                     errMsg.Append(soe.ToString());
                     err = true;
@@ -238,10 +235,10 @@ namespace Memcached.ClientLibrary
         public void Close()
         {
             // check in to pool
-			if(Log.IsDebugEnabled)
-			{
-				Log.Debug(GetLocalizedString("close socket").Replace("$$ToString$$", ToString()));
-			}
+            if (Log.IsDebugEnabled())
+            {
+                Log.Debug(GetLocalizedString("close socket").Replace("$$ToString$$", ToString()));
+            }
             _pool.CheckIn(this);
         }
 
@@ -262,10 +259,10 @@ namespace Memcached.ClientLibrary
         {
             if (_socket == null || !_socket.Connected)
             {
-				if(Log.IsErrorEnabled)
-				{
-					Log.Error(GetLocalizedString("read closed socket"));
-				}
+                if (Log.IsErrorEnabled())
+                {
+                    Log.Error(GetLocalizedString("read closed socket"));
+                }
                 throw new IOException(GetLocalizedString("read closed socket"));
             }
 
@@ -348,10 +345,10 @@ namespace Memcached.ClientLibrary
         {
             if (_socket == null || !_socket.Connected)
             {
-				if(Log.IsErrorEnabled)
-				{
-					Log.Error(GetLocalizedString("read closed socket"));
-				}
+                if (Log.IsErrorEnabled())
+                {
+                    Log.Error(GetLocalizedString("read closed socket"));
+                }
                 throw new IOException(GetLocalizedString("read closed socket"));
             }
 
@@ -373,10 +370,10 @@ namespace Memcached.ClientLibrary
         {
             if (_socket == null || !_socket.Connected)
             {
-				if(Log.IsErrorEnabled)
-				{
-					Log.Error(GetLocalizedString("write closed socket"));
-				}
+                if (Log.IsErrorEnabled())
+                {
+                    Log.Error(GetLocalizedString("write closed socket"));
+                }
                 throw new IOException(GetLocalizedString("write closed socket"));
             }
             _networkStream.Flush();
@@ -388,29 +385,29 @@ namespace Memcached.ClientLibrary
         /// <param name="bytes">byte array to write</param>
         public void Write(byte[] bytes)
         {
-			Write(bytes, 0, bytes.Length);
+            Write(bytes, 0, bytes.Length);
         }
 
-		/// <summary>
-		/// writes a byte array to the output stream
-		/// </summary>
-		/// <param name="bytes">byte array to write</param>
-		/// <param name="offset">offset to begin writing from</param>
-		/// <param name="count">count of bytes to write</param>
-		public void Write(byte[] bytes, int offset, int count)
-		{
-			if (_socket == null || !_socket.Connected)
-			{
-				if(Log.IsErrorEnabled)
-				{
-					Log.Error(GetLocalizedString("write closed socket"));
-				}
-				throw new IOException(GetLocalizedString("write closed socket"));
-			}
-			if (bytes != null)
-				_networkStream.Write(bytes, offset, count);
-		}
-		/// <summary>
+        /// <summary>
+        /// writes a byte array to the output stream
+        /// </summary>
+        /// <param name="bytes">byte array to write</param>
+        /// <param name="offset">offset to begin writing from</param>
+        /// <param name="count">count of bytes to write</param>
+        public void Write(byte[] bytes, int offset, int count)
+        {
+            if (_socket == null || !_socket.Connected)
+            {
+                if (Log.IsErrorEnabled())
+                {
+                    Log.Error(GetLocalizedString("write closed socket"));
+                }
+                throw new IOException(GetLocalizedString("write closed socket"));
+            }
+            if (bytes != null)
+                _networkStream.Write(bytes, offset, count);
+        }
+        /// <summary>
         /// returns the string representation of this socket 
         /// </summary>
         /// <returns></returns>
@@ -452,7 +449,7 @@ namespace Memcached.ClientLibrary
             Thread _thread;
 
             // logger
-            private static ILog Log = LogManager.GetLogger(typeof(ConnectThread));
+            private static ILog Log = LogProvider.GetLogger(typeof(ConnectThread));
 
             private Socket _socket;
             private String _host;
@@ -490,16 +487,16 @@ namespace Memcached.ClientLibrary
                 catch (SocketException ex)
                 {
                     _error = true;
-					if(Log.IsDebugEnabled)
-					{
-						Log.Debug(GetLocalizedString("socket connection exception"), ex);
-					}
+                    if (Log.IsDebugEnabled())
+                    {
+                        Log.Debug(GetLocalizedString("socket connection exception"), ex);
+                    }
                 }
 
-				if(Log.IsDebugEnabled)
-				{
-					Log.Debug(GetLocalizedString("connect thread connect").Replace("$$Host$$", _host));
-				}
+                if (Log.IsDebugEnabled())
+                {
+                    Log.Debug(GetLocalizedString("connect thread connect").Replace("$$Host$$", _host));
+                }
             }
 
             /// <summary>

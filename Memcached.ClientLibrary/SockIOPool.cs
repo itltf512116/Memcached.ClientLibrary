@@ -32,17 +32,14 @@ namespace Memcached.ClientLibrary
 {
     using System;
     using System.Collections;
-	using System.Globalization;
+    using System.Globalization;
     using System.IO;
-    using System.Net;
     using System.Net.Sockets;
-	using System.Resources;
+    using System.Resources;
     using System.Runtime.CompilerServices;
-    using System.Security.Cryptography;
     using System.Text;
     using System.Threading;
-
-    using log4net;
+    using Memcached.ClientLibrary.Logging;
 
     ///<summary>
     ///Hashing algorithms we can use
@@ -131,7 +128,7 @@ namespace Memcached.ClientLibrary
     public class SockIOPool
     {
         // logger
-        private static ILog Log = LogManager.GetLogger(typeof(SockIOPool));
+        private static ILog Log = LogProvider.GetLogger(typeof(SockIOPool));
 
         // store instances of pools
         private static Hashtable Pools = new Hashtable();
@@ -182,7 +179,7 @@ namespace Memcached.ClientLibrary
         [MethodImpl(MethodImplOptions.Synchronized)]
         public static SockIOPool GetInstance(String poolName)
         {
-            if(Pools.ContainsKey(poolName))
+            if (Pools.ContainsKey(poolName))
                 return (SockIOPool)Pools[poolName];
 
             SockIOPool pool = new SockIOPool();
@@ -202,68 +199,68 @@ namespace Memcached.ClientLibrary
             return GetInstance(GetLocalizedString("default instance"));
         }
 
-		/// <summary>
-		/// Gets the list of all cache servers
-		/// </summary>
-		/// <value>string array of servers [host:port]</value>
-		public ArrayList Servers
-		{
-			get { return _servers; }
-		}
+        /// <summary>
+        /// Gets the list of all cache servers
+        /// </summary>
+        /// <value>string array of servers [host:port]</value>
+        public ArrayList Servers
+        {
+            get { return _servers; }
+        }
 
-		/// <summary>
-		/// Sets the list of all cache servers
-		/// </summary>
-		/// <param name="servers">string array of servers [host:port]</param>
-		public void SetServers(string[] servers)
-		{
-			SetServers(new ArrayList(servers));
-		}
+        /// <summary>
+        /// Sets the list of all cache servers
+        /// </summary>
+        /// <param name="servers">string array of servers [host:port]</param>
+        public void SetServers(string[] servers)
+        {
+            SetServers(new ArrayList(servers));
+        }
 
-		/// <summary>
-		/// Sets the list of all cache servers
-		/// </summary>
-		/// <param name="servers">string array of servers [host:port]</param>
-		public void SetServers(ArrayList servers)
-		{
-			_servers = servers;
-		}
+        /// <summary>
+        /// Sets the list of all cache servers
+        /// </summary>
+        /// <param name="servers">string array of servers [host:port]</param>
+        public void SetServers(ArrayList servers)
+        {
+            _servers = servers;
+        }
 
-		/// <summary>
-		/// Gets or sets the list of weights to apply to the server list
-		/// </summary>
-		/// <value>
-		/// This is an int array with each element corresponding to an element
-		/// in the same position in the server string array <see>Servers</see>.
-		/// </value>
-		public ArrayList Weights
-		{
-			get { return _weights; }
-		}
+        /// <summary>
+        /// Gets or sets the list of weights to apply to the server list
+        /// </summary>
+        /// <value>
+        /// This is an int array with each element corresponding to an element
+        /// in the same position in the server string array <see>Servers</see>.
+        /// </value>
+        public ArrayList Weights
+        {
+            get { return _weights; }
+        }
 
-		/// <summary>
-		/// sets the list of weights to apply to the server list
-		/// </summary>
-		/// <param name="weights">
-		/// This is an int array with each element corresponding to an element
-		/// in the same position in the server string array <see>Servers</see>.
-		/// </param>
-		public void SetWeights(int[] weights)
-		{
-			SetWeights(new ArrayList(weights));
-		}
+        /// <summary>
+        /// sets the list of weights to apply to the server list
+        /// </summary>
+        /// <param name="weights">
+        /// This is an int array with each element corresponding to an element
+        /// in the same position in the server string array <see>Servers</see>.
+        /// </param>
+        public void SetWeights(int[] weights)
+        {
+            SetWeights(new ArrayList(weights));
+        }
 
-		/// <summary>
-		/// sets the list of weights to apply to the server list
-		/// </summary>
-		/// <param name="weights">
-		/// This is an int array with each element corresponding to an element
-		/// in the same position in the server string array <see>Servers</see>.
-		/// </param>
-		public void SetWeights(ArrayList weights)
-		{
-			_weights = weights;
-		}
+        /// <summary>
+        /// sets the list of weights to apply to the server list
+        /// </summary>
+        /// <param name="weights">
+        /// This is an int array with each element corresponding to an element
+        /// in the same position in the server string array <see>Servers</see>.
+        /// </param>
+        public void SetWeights(ArrayList weights)
+        {
+            _weights = weights;
+        }
 
         /// <summary>
         /// Gets or sets the initial number of connections per server setting in the available pool.
@@ -390,7 +387,7 @@ namespace Memcached.ClientLibrary
             int hash = 0;
             char[] cArr = key.ToCharArray();
 
-            for(int i = 0; i < cArr.Length; ++i)
+            for (int i = 0; i < cArr.Length; ++i)
             {
                 hash = (hash * 33) + cArr[i];
             }
@@ -421,106 +418,106 @@ namespace Memcached.ClientLibrary
         /// Initializes the pool
         /// </summary>
         [MethodImpl(MethodImplOptions.Synchronized)]
-        public void Initialize() 
-		{
-			// check to see if already initialized
-			if(_initialized
-				&& _buckets != null
-				&& _availPool != null
-				&& _busyPool != null) 
-			{
-				if(Log.IsErrorEnabled)
-				{
-					Log.Error(GetLocalizedString("initializing initialized pool"));
-				}
-				return;
-			}
+        public void Initialize()
+        {
+            // check to see if already initialized
+            if (_initialized
+                && _buckets != null
+                && _availPool != null
+                && _busyPool != null)
+            {
+                if (Log.IsErrorEnabled())
+                {
+                    Log.Error(GetLocalizedString("initializing initialized pool"));
+                }
+                return;
+            }
 
-			// initialize empty maps
-			_buckets     = new ArrayList();
-			_availPool   = new Hashtable(_servers.Count * _initConns);
-			_busyPool    = new Hashtable(_servers.Count * _initConns);
-			_hostDeadDuration = new Hashtable();
-			_hostDead    = new Hashtable();
-			_createShift = new Hashtable();
-			_maxCreate   = (_poolMultiplier > _minConns) ? _minConns : _minConns / _poolMultiplier;		// only create up to maxCreate connections at once
+            // initialize empty maps
+            _buckets = new ArrayList();
+            _availPool = new Hashtable(_servers.Count * _initConns);
+            _busyPool = new Hashtable(_servers.Count * _initConns);
+            _hostDeadDuration = new Hashtable();
+            _hostDead = new Hashtable();
+            _createShift = new Hashtable();
+            _maxCreate = (_poolMultiplier > _minConns) ? _minConns : _minConns / _poolMultiplier;       // only create up to maxCreate connections at once
 
-			if(Log.IsDebugEnabled)
-			{
-				Log.Debug(GetLocalizedString("initializing pool")
-					.Replace("$$InitConnections$$", InitConnections.ToString(new NumberFormatInfo()))
-					.Replace("$$MinConnections$$", MinConnections.ToString(new NumberFormatInfo()))
-					.Replace("$$MaxConnections$$", MaxConnections.ToString(new NumberFormatInfo())));
-			}
+            if (Log.IsDebugEnabled())
+            {
+                Log.Debug(GetLocalizedString("initializing pool")
+                    .Replace("$$InitConnections$$", InitConnections.ToString(new NumberFormatInfo()))
+                    .Replace("$$MinConnections$$", MinConnections.ToString(new NumberFormatInfo()))
+                    .Replace("$$MaxConnections$$", MaxConnections.ToString(new NumberFormatInfo())));
+            }
 
-			// if servers is not set, or it empty, then
-			// throw a runtime exception
-			if(_servers == null || _servers.Count <= 0) 
-			{
-				if(Log.IsErrorEnabled)
-				{
-					Log.Error(GetLocalizedString("initialize with no servers"));
-				}
-				throw new ArgumentException(GetLocalizedString("initialize with no servers"));
-			}
+            // if servers is not set, or it empty, then
+            // throw a runtime exception
+            if (_servers == null || _servers.Count <= 0)
+            {
+                if (Log.IsErrorEnabled())
+                {
+                    Log.Error(GetLocalizedString("initialize with no servers"));
+                }
+                throw new ArgumentException(GetLocalizedString("initialize with no servers"));
+            }
 
-			for(int i = 0; i < _servers.Count; i++) 
-			{
-				// add to bucket
-				// with weights if we have them 
-				if(_weights != null && _weights.Count > i) 
-				{
-					for(int k = 0; k < ((int)_weights[i]); k++) 
-					{
-						_buckets.Add(_servers[i]);
-						if(Log.IsDebugEnabled)
-						{
-							Log.Debug("Added " + _servers[i] + " to server bucket");
-						}
-					}
-				}
-				else 
-				{
-					_buckets.Add(_servers[i]);
-					if(Log.IsDebugEnabled)
-					{
-						Log.Debug("Added " + _servers[i] + " to server bucket");
-					}
-				}
+            for (int i = 0; i < _servers.Count; i++)
+            {
+                // add to bucket
+                // with weights if we have them 
+                if (_weights != null && _weights.Count > i)
+                {
+                    for (int k = 0; k < ((int)_weights[i]); k++)
+                    {
+                        _buckets.Add(_servers[i]);
+                        if (Log.IsDebugEnabled())
+                        {
+                            Log.Debug("Added " + _servers[i] + " to server bucket");
+                        }
+                    }
+                }
+                else
+                {
+                    _buckets.Add(_servers[i]);
+                    if (Log.IsDebugEnabled())
+                    {
+                        Log.Debug("Added " + _servers[i] + " to server bucket");
+                    }
+                }
 
-				// create initial connections
-				if(Log.IsDebugEnabled)
-				{
-					Log.Debug(GetLocalizedString("create initial connections").Replace("$$InitConns$$", InitConnections.ToString(new NumberFormatInfo())).Replace("$$Servers[i]$$", Servers[i].ToString()));
-				}
+                // create initial connections
+                if (Log.IsDebugEnabled())
+                {
+                    Log.Debug(GetLocalizedString("create initial connections").Replace("$$InitConns$$", InitConnections.ToString(new NumberFormatInfo())).Replace("$$Servers[i]$$", Servers[i].ToString()));
+                }
 
-				for(int j = 0; j < _initConns; j++) 
-				{
-					SockIO socket = CreateSocket((string)_servers[i]);
-					if(socket == null) 
-					{
-						if(Log.IsErrorEnabled)
-						{
-							Log.Error(GetLocalizedString("failed to connect").Replace("$$Servers[i]$$", Servers[i].ToString()).Replace("$$j$$", j.ToString(new NumberFormatInfo())));
-						}
-						break;
-					}
+                for (int j = 0; j < _initConns; j++)
+                {
+                    SockIO socket = CreateSocket((string)_servers[i]);
+                    if (socket == null)
+                    {
+                        if (Log.IsErrorEnabled())
+                        {
+                            Log.Error(GetLocalizedString("failed to connect").Replace("$$Servers[i]$$", Servers[i].ToString()).Replace("$$j$$", j.ToString(new NumberFormatInfo())));
+                        }
+                        break;
+                    }
 
-					AddSocketToPool(_availPool, (string)_servers[i], socket);
-					if(Log.IsDebugEnabled)
-					{
-						Log.Debug(GetLocalizedString("created and added socket").Replace("$$ToString$$", socket.ToString()).Replace("$$Servers[i]$$", Servers[i].ToString()));
-					}
-				}
-			}
+                    AddSocketToPool(_availPool, (string)_servers[i], socket);
+                    if (Log.IsDebugEnabled())
+                    {
+                        Log.Debug(GetLocalizedString("created and added socket").Replace("$$ToString$$", socket.ToString()).Replace("$$Servers[i]$$", Servers[i].ToString()));
+                    }
+                }
+            }
 
-			// mark pool as initialized
-			_initialized = true;
+            // mark pool as initialized
+            _initialized = true;
 
-			// start maint thread TODO: re-enable
-			if(_maintThreadSleep > 0)
-				this.StartMaintenanceThread();
-		}
+            // start maint thread TODO: re-enable
+            if (_maintThreadSleep > 0)
+                this.StartMaintenanceThread();
+        }
 
         /// <summary>
         /// Returns the state of the pool
@@ -547,90 +544,90 @@ namespace Memcached.ClientLibrary
             // if host is dead, then we don't need to try again
             // until the dead status has expired
             // we do not try to put back in if failover is off
-            if(_failover && _hostDead.ContainsKey(host) && _hostDeadDuration.ContainsKey(host))
+            if (_failover && _hostDead.ContainsKey(host) && _hostDeadDuration.ContainsKey(host))
             {
 
                 DateTime store = (DateTime)_hostDead[host];
                 long expire = ((long)_hostDeadDuration[host]);
 
-                if((store.AddMilliseconds(expire)) > DateTime.Now)
+                if ((store.AddMilliseconds(expire)) > DateTime.Now)
                     return null;
             }
 
-			try
-			{
-				socket = new SockIO(this, host, _socketTimeout, _socketConnectTimeout, _nagle);
+            try
+            {
+                socket = new SockIO(this, host, _socketTimeout, _socketConnectTimeout, _nagle);
 
-				if(!socket.IsConnected)
-				{
-					if(Log.IsErrorEnabled)
-					{
-						Log.Error(GetLocalizedString("failed to get socket").Replace("$$Host$$", host));
-					}
-					try
-					{
-						socket.TrueClose();
-					}
-					catch(SocketException ex)
-					{
-						if(Log.IsErrorEnabled)
-						{
-							Log.Error(GetLocalizedString("failed to close socket on host").Replace("$$Host$$", host), ex);
-						}
-						socket = null;
-					}
-				}
-			}
-			catch(SocketException ex)
-			{
-				if(Log.IsErrorEnabled)
-				{
-					Log.Error(GetLocalizedString("failed to get socket").Replace("$$Host$$", host), ex);
-				}
-				socket = null;
-			}
-			catch(ArgumentException ex)
-			{
-				if(Log.IsErrorEnabled)
-				{
-					Log.Error(GetLocalizedString("failed to get socket").Replace("$$Host$$", host), ex);
-				}
-				socket = null;
-			}
-			catch(IOException ex)
-			{
-				if(Log.IsErrorEnabled)
-				{
-					Log.Error(GetLocalizedString("failed to get socket").Replace("$$Host$$", host), ex);
-				}
-				socket = null;
-			}
+                if (!socket.IsConnected)
+                {
+                    if (Log.IsErrorEnabled())
+                    {
+                        Log.Error(GetLocalizedString("failed to get socket").Replace("$$Host$$", host));
+                    }
+                    try
+                    {
+                        socket.TrueClose();
+                    }
+                    catch (SocketException ex)
+                    {
+                        if (Log.IsErrorEnabled())
+                        {
+                            Log.Error(GetLocalizedString("failed to close socket on host").Replace("$$Host$$", host), ex);
+                        }
+                        socket = null;
+                    }
+                }
+            }
+            catch (SocketException ex)
+            {
+                if (Log.IsErrorEnabled())
+                {
+                    Log.Error(GetLocalizedString("failed to get socket").Replace("$$Host$$", host), ex);
+                }
+                socket = null;
+            }
+            catch (ArgumentException ex)
+            {
+                if (Log.IsErrorEnabled())
+                {
+                    Log.Error(GetLocalizedString("failed to get socket").Replace("$$Host$$", host), ex);
+                }
+                socket = null;
+            }
+            catch (IOException ex)
+            {
+                if (Log.IsErrorEnabled())
+                {
+                    Log.Error(GetLocalizedString("failed to get socket").Replace("$$Host$$", host), ex);
+                }
+                socket = null;
+            }
 
             // if we failed to get socket, then mark
             // host dead for a duration which falls off
-            if(socket == null)
+            if (socket == null)
             {
                 DateTime now = DateTime.Now;
                 _hostDead[host] = now;
                 long expire = (_hostDeadDuration.ContainsKey(host)) ? (((long)_hostDeadDuration[host]) * 2) : 100;
                 _hostDeadDuration[host] = expire;
-				if(Log.IsDebugEnabled)
-				{
-					Log.Debug(GetLocalizedString("ignoring dead host").Replace("$$Host$$", host).Replace("$$Expire$$", expire.ToString(new NumberFormatInfo())));
-				}
+                if (Log.IsDebugEnabled())
+                {
+                    Log.Debug(GetLocalizedString("ignoring dead host").Replace("$$Host$$", host).Replace("$$Expire$$", expire.ToString(new NumberFormatInfo())));
+                }
 
                 // also clear all entries for this host from availPool
                 ClearHostFromPool(_availPool, host);
             }
             else
             {
-				if(Log.IsDebugEnabled)
-				{
-					Log.Debug(GetLocalizedString("created socket").Replace("$$ToString$$", socket.ToString()).Replace("$$Host$$", host));
-				}
+                if (Log.IsDebugEnabled())
+                {
+                    Log.Debug(GetLocalizedString("created socket").Replace("$$ToString$$", socket.ToString()).Replace("$$Host$$", host));
+                }
                 _hostDead.Remove(host);
                 _hostDeadDuration.Remove(host);
-                if(_buckets.BinarySearch(host) < 0)
+                if (_buckets.BinarySearch(host) < 0)
                     _buckets.Add(host);
             }
 
@@ -660,46 +657,46 @@ namespace Memcached.ClientLibrary
         /// <returns>SockIO obj connected to server</returns>
         public SockIO GetSock(string key, object hashCode)
         {
-			string hashCodeString = "<null>";
-			if(hashCode != null)
-				hashCodeString = hashCode.ToString();
+            string hashCodeString = "<null>";
+            if (hashCode != null)
+                hashCodeString = hashCode.ToString();
 
-			if(Log.IsDebugEnabled)
-			{
-				Log.Debug(GetLocalizedString("cache socket pick").Replace("$$Key$$", key).Replace("$$HashCode$$", hashCodeString));
-			}
+            if (Log.IsDebugEnabled())
+            {
+                Log.Debug(GetLocalizedString("cache socket pick").Replace("$$Key$$", key).Replace("$$HashCode$$", hashCodeString));
+            }
 
             if (key == null || key.Length == 0)
             {
-				if(Log.IsDebugEnabled)
-				{
-					Log.Debug(GetLocalizedString("null key"));
-				}
+                if (Log.IsDebugEnabled())
+                {
+                    Log.Debug(GetLocalizedString("null key"));
+                }
                 return null;
             }
 
-            if(!_initialized)
+            if (!_initialized)
             {
-				if(Log.IsErrorEnabled)
-				{
-					Log.Error(GetLocalizedString("get socket from uninitialized pool"));
-				}
+                if (Log.IsErrorEnabled())
+                {
+                    Log.Error(GetLocalizedString("get socket from uninitialized pool"));
+                }
                 return null;
             }
 
             // if no servers return null
-            if(_buckets.Count == 0)
+            if (_buckets.Count == 0)
                 return null;
 
             // if only one server, return it
-            if(_buckets.Count == 1)
+            if (_buckets.Count == 1)
                 return GetConnection((string)_buckets[0]);
 
             int tries = 0;
 
             // generate hashcode
             int hv;
-            if(hashCode != null)
+            if (hashCode != null)
             {
                 hv = (int)hashCode;
             }
@@ -709,7 +706,7 @@ namespace Memcached.ClientLibrary
                 // NATIVE_HASH = 0
                 // OLD_COMPAT_HASH = 1
                 // NEW_COMPAT_HASH = 2
-                switch(_hashingAlgorithm)
+                switch (_hashingAlgorithm)
                 {
                     case HashingAlgorithm.Native:
                         hv = key.GetHashCode();
@@ -732,32 +729,32 @@ namespace Memcached.ClientLibrary
             }
 
             // keep trying different servers until we find one
-            while(tries++ <= _buckets.Count)
+            while (tries++ <= _buckets.Count)
             {
                 // get bucket using hashcode 
                 // get one from factory
                 int bucket = hv % _buckets.Count;
-                if(bucket < 0)
+                if (bucket < 0)
                     bucket += _buckets.Count;
 
                 SockIO sock = GetConnection((string)_buckets[bucket]);
 
-				if(Log.IsDebugEnabled)
-				{
-					Log.Debug(GetLocalizedString("cache choose").Replace("$$Bucket$$", _buckets[bucket].ToString()).Replace("$$Key$$", key));
-				}
+                if (Log.IsDebugEnabled())
+                {
+                    Log.Debug(GetLocalizedString("cache choose").Replace("$$Bucket$$", _buckets[bucket].ToString()).Replace("$$Key$$", key));
+                }
 
-                if(sock != null)
+                if (sock != null)
                     return sock;
 
                 // if we do not want to failover, then bail here
-                if(!_failover)
+                if (!_failover)
                     return null;
 
                 // if we failed to get a socket from this server
                 // then we try again by adding an incrementer to the
                 // current key and then rehashing 
-                switch(_hashingAlgorithm)
+                switch (_hashingAlgorithm)
                 {
                     case HashingAlgorithm.Native:
                         hv += ((string)("" + tries + key)).GetHashCode();
@@ -794,35 +791,35 @@ namespace Memcached.ClientLibrary
         [MethodImpl(MethodImplOptions.Synchronized)]
         public SockIO GetConnection(string host)
         {
-            if(!_initialized)
+            if (!_initialized)
             {
-				if(Log.IsErrorEnabled)
-				{
-					Log.Error(GetLocalizedString("get socket from uninitialized pool"));
-				}
+                if (Log.IsErrorEnabled())
+                {
+                    Log.Error(GetLocalizedString("get socket from uninitialized pool"));
+                }
                 return null;
             }
 
-            if(host == null)
+            if (host == null)
                 return null;
 
             // if we have items in the pool
             // then we can return it
-            if(_availPool != null && !(_availPool.Count == 0))
+            if (_availPool != null && !(_availPool.Count == 0))
             {
                 // take first connected socket
                 Hashtable aSockets = (Hashtable)_availPool[host];
 
-                if(aSockets != null && !(aSockets.Count == 0))
+                if (aSockets != null && !(aSockets.Count == 0))
                 {
-                    foreach(SockIO socket in new IteratorIsolateCollection(aSockets.Keys))
+                    foreach (SockIO socket in new IteratorIsolateCollection(aSockets.Keys))
                     {
-                        if(socket.IsConnected)
+                        if (socket.IsConnected)
                         {
-							if(Log.IsDebugEnabled)
-							{
-								Log.Debug(GetLocalizedString("move socket").Replace("$$Host$$", host).Replace("$$Socket$$", socket.ToString())); 
-							}
+                            if (Log.IsDebugEnabled())
+                            {
+                                Log.Debug(GetLocalizedString("move socket").Replace("$$Host$$", host).Replace("$$Socket$$", socket.ToString()));
+                            }
 
                             // remove from avail pool
                             aSockets.Remove(socket);
@@ -836,10 +833,10 @@ namespace Memcached.ClientLibrary
                         else
                         {
                             // not connected, so we need to remove it
-							if(Log.IsErrorEnabled)
-							{
-								Log.Error(GetLocalizedString("socket not connected").Replace("$$Host$$", host).Replace("$$Socket$$", socket.ToString()));
-							}
+                            if (Log.IsErrorEnabled())
+                            {
+                                Log.Error(GetLocalizedString("socket not connected").Replace("$$Host$$", host).Replace("$$Socket$$", socket.ToString()));
+                            }
 
                             // remove from avail pool
                             aSockets.Remove(socket);
@@ -855,7 +852,7 @@ namespace Memcached.ClientLibrary
             int shift = (cShift != null) ? (int)cShift : 0;
 
             int create = 1 << shift;
-            if(create >= _maxCreate)
+            if (create >= _maxCreate)
             {
                 create = _maxCreate;
             }
@@ -867,18 +864,18 @@ namespace Memcached.ClientLibrary
             // store the shift value for this host
             _createShift[host] = shift;
 
-			if(Log.IsDebugEnabled)
-			{
-				Log.Debug(GetLocalizedString("creating sockets").Replace("$$Create$$", create.ToString(new NumberFormatInfo())));
-			}
+            if (Log.IsDebugEnabled())
+            {
+                Log.Debug(GetLocalizedString("creating sockets").Replace("$$Create$$", create.ToString(new NumberFormatInfo())));
+            }
 
-            for(int i = create; i > 0; i--)
+            for (int i = create; i > 0; i--)
             {
                 SockIO socket = CreateSocket(host);
-                if(socket == null)
+                if (socket == null)
                     break;
 
-                if(i == 1)
+                if (i == 1)
                 {
                     // last iteration, add to busy pool and return sockio
                     AddSocketToPool(_busyPool, host, socket);
@@ -907,7 +904,7 @@ namespace Memcached.ClientLibrary
         protected static void AddSocketToPool(Hashtable pool, string host, SockIO socket)
         {
             if (pool == null)
-                return; 
+                return;
 
             Hashtable sockets;
             if (host != null && host.Length != 0 && pool.ContainsKey(host))
@@ -938,12 +935,12 @@ namespace Memcached.ClientLibrary
         protected static void RemoveSocketFromPool(Hashtable pool, string host, SockIO socket)
         {
             if (host != null && host.Length == 0 || pool == null)
-                return; 
+                return;
 
-            if(pool.ContainsKey(host))
+            if (pool.ContainsKey(host))
             {
                 Hashtable sockets = (Hashtable)pool[host];
-                if(sockets != null)
+                if (sockets != null)
                 {
                     sockets.Remove(socket);
                 }
@@ -963,24 +960,24 @@ namespace Memcached.ClientLibrary
             if (pool == null || host != null && host.Length == 0)
                 return;
 
-            if(pool.ContainsKey(host))
+            if (pool.ContainsKey(host))
             {
                 Hashtable sockets = (Hashtable)pool[host];
 
-                if(sockets != null && sockets.Count > 0)
+                if (sockets != null && sockets.Count > 0)
                 {
-                    foreach(SockIO socket in new IteratorIsolateCollection(sockets.Keys))
+                    foreach (SockIO socket in new IteratorIsolateCollection(sockets.Keys))
                     {
                         try
                         {
                             socket.TrueClose();
                         }
-                        catch(IOException ioe)
+                        catch (IOException ioe)
                         {
-							if(Log.IsErrorEnabled)
-							{
-								Log.Error(GetLocalizedString("failed to close socket"), ioe);
-							}
+                            if (Log.IsErrorEnabled())
+                            {
+                                Log.Error(GetLocalizedString("failed to close socket"), ioe);
+                            }
                         }
 
                         sockets.Remove(socket);
@@ -1001,28 +998,28 @@ namespace Memcached.ClientLibrary
         public void CheckIn(SockIO socket, bool addToAvail)
         {
             if (socket == null)
-                return; 
+                return;
 
             string host = socket.Host;
-			if(Log.IsDebugEnabled)
-			{
-				Log.Debug("Calling check-in on socket: " + socket.ToString() + " for host: " + host);
-			}
+            if (Log.IsDebugEnabled())
+            {
+                Log.Debug("Calling check-in on socket: " + socket.ToString() + " for host: " + host);
+            }
 
             // remove from the busy pool
-			if(Log.IsDebugEnabled)
-			{
-				Log.Debug("Removing socket (" + socket.ToString() + ") from busy pool for host: " + host);
-			}
+            if (Log.IsDebugEnabled())
+            {
+                Log.Debug("Removing socket (" + socket.ToString() + ") from busy pool for host: " + host);
+            }
             RemoveSocketFromPool(_busyPool, host, socket);
 
             // add to avail pool
-            if(addToAvail && socket.IsConnected)
+            if (addToAvail && socket.IsConnected)
             {
-				if(Log.IsDebugEnabled)
-				{
-					Log.Debug("Returning socket (" + socket.ToString() + " to avail pool for host: " + host);
-				}
+                if (Log.IsDebugEnabled())
+                {
+                    Log.Debug("Returning socket (" + socket.ToString() + " to avail pool for host: " + host);
+                }
                 AddSocketToPool(_availPool, host, socket);
             }
         }
@@ -1050,24 +1047,24 @@ namespace Memcached.ClientLibrary
         protected static void ClosePool(Hashtable pool)
         {
             if (pool == null)
-                return; 
+                return;
 
-            foreach(string host in pool.Keys)
+            foreach (string host in pool.Keys)
             {
                 Hashtable sockets = (Hashtable)pool[host];
 
-                foreach(SockIO socket in new IteratorIsolateCollection(sockets.Keys))
+                foreach (SockIO socket in new IteratorIsolateCollection(sockets.Keys))
                 {
                     try
                     {
                         socket.TrueClose();
                     }
-                    catch(IOException ioe)
+                    catch (IOException ioe)
                     {
-						if(Log.IsErrorEnabled)
-						{
-							Log.Error(GetLocalizedString("failed to true close").Replace("$$ToString$$", socket.ToString()).Replace("$$Host$$", host), ioe);
-						}
+                        if (Log.IsErrorEnabled())
+                        {
+                            Log.Error(GetLocalizedString("failed to true close").Replace("$$ToString$$", socket.ToString()).Replace("$$Host$$", host), ioe);
+                        }
                     }
 
                     sockets.Remove(socket);
@@ -1085,17 +1082,17 @@ namespace Memcached.ClientLibrary
         [MethodImpl(MethodImplOptions.Synchronized)]
         public void Shutdown()
         {
-			if(Log.IsDebugEnabled)
-			{
-				Log.Debug(GetLocalizedString("start socket pool shutdown"));
-			}
-            if(_maintenanceThread != null && _maintenanceThread.IsRunning)
+            if (Log.IsDebugEnabled())
+            {
+                Log.Debug(GetLocalizedString("start socket pool shutdown"));
+            }
+            if (_maintenanceThread != null && _maintenanceThread.IsRunning)
                 StopMaintenanceThread();
 
-			if(Log.IsDebugEnabled)
-			{
-				Log.Debug("Closing all internal pools.");
-			}
+            if (Log.IsDebugEnabled())
+            {
+                Log.Debug("Closing all internal pools.");
+            }
             ClosePool(_availPool);
             ClosePool(_busyPool);
             _availPool = null;
@@ -1104,10 +1101,10 @@ namespace Memcached.ClientLibrary
             _hostDeadDuration = null;
             _hostDead = null;
             _initialized = false;
-			if(Log.IsDebugEnabled)
-			{
-				Log.Debug(GetLocalizedString("end socket pool shutdown"));
-			}
+            if (Log.IsDebugEnabled())
+            {
+                Log.Debug(GetLocalizedString("end socket pool shutdown"));
+            }
         }
 
         /// <summary>
@@ -1120,15 +1117,15 @@ namespace Memcached.ClientLibrary
         [MethodImpl(MethodImplOptions.Synchronized)]
         protected void StartMaintenanceThread()
         {
-            if(_maintenanceThread != null)
+            if (_maintenanceThread != null)
             {
 
-                if(_maintenanceThread.IsRunning)
+                if (_maintenanceThread.IsRunning)
                 {
-					if(Log.IsErrorEnabled)
-					{
-						Log.Error(GetLocalizedString("main thread running"));
-					}
+                    if (Log.IsErrorEnabled())
+                    {
+                        Log.Error(GetLocalizedString("main thread running"));
+                    }
                 }
                 else
                 {
@@ -1149,7 +1146,7 @@ namespace Memcached.ClientLibrary
         [MethodImpl(MethodImplOptions.Synchronized)]
         protected void StopMaintenanceThread()
         {
-            if(_maintenanceThread != null && _maintenanceThread.IsRunning)
+            if (_maintenanceThread != null && _maintenanceThread.IsRunning)
                 _maintenanceThread.StopThread();
         }
 
@@ -1161,42 +1158,42 @@ namespace Memcached.ClientLibrary
         [MethodImpl(MethodImplOptions.Synchronized)]
         protected void SelfMaintain()
         {
-			if(Log.IsDebugEnabled)
-			{
-				Log.Debug(GetLocalizedString("start self maintenance"));
-			}
+            if (Log.IsDebugEnabled())
+            {
+                Log.Debug(GetLocalizedString("start self maintenance"));
+            }
 
             // go through avail sockets and create/destroy sockets
             // as needed to maintain pool settings
-            foreach(string host in new IteratorIsolateCollection(_availPool.Keys))
+            foreach (string host in new IteratorIsolateCollection(_availPool.Keys))
             {
                 Hashtable sockets = (Hashtable)_availPool[host];
-				if(Log.IsDebugEnabled)
-				{
-					Log.Debug(GetLocalizedString("size of available pool").Replace("$$Host$$", host).Replace("$$Sockets$$", sockets.Count.ToString(new NumberFormatInfo())));
-				}
+                if (Log.IsDebugEnabled())
+                {
+                    Log.Debug(GetLocalizedString("size of available pool").Replace("$$Host$$", host).Replace("$$Sockets$$", sockets.Count.ToString(new NumberFormatInfo())));
+                }
 
                 // if pool is too small (n < minSpare)
-                if(sockets.Count < _minConns)
+                if (sockets.Count < _minConns)
                 {
                     // need to create new sockets
                     int need = _minConns - sockets.Count;
-					if(Log.IsDebugEnabled)
-					{
-						Log.Debug(GetLocalizedString("need to create new sockets").Replace("$$Need$$", need.ToString(new NumberFormatInfo())).Replace("$$Host$$", host));
-					}
+                    if (Log.IsDebugEnabled())
+                    {
+                        Log.Debug(GetLocalizedString("need to create new sockets").Replace("$$Need$$", need.ToString(new NumberFormatInfo())).Replace("$$Host$$", host));
+                    }
 
-                    for(int j = 0; j < need; j++)
+                    for (int j = 0; j < need; j++)
                     {
                         SockIO socket = CreateSocket(host);
 
-                        if(socket == null)
+                        if (socket == null)
                             break;
 
                         AddSocketToPool(_availPool, host, socket);
                     }
                 }
-                else if(sockets.Count > _maxConns)
+                else if (sockets.Count > _maxConns)
                 {
                     // need to close down some sockets
                     int diff = sockets.Count - _maxConns;
@@ -1204,13 +1201,13 @@ namespace Memcached.ClientLibrary
                         ? diff
                         : (diff) / _poolMultiplier;
 
-					if(Log.IsDebugEnabled)
-					{
-						Log.Debug(GetLocalizedString("need to remove spare sockets").Replace("$$NeedToClose$$", needToClose.ToString(new NumberFormatInfo()).Replace("$$Host$$", host)));
-					}
-                    foreach(SockIO socket in new IteratorIsolateCollection(sockets.Keys))
+                    if (Log.IsDebugEnabled())
                     {
-                        if(needToClose <= 0)
+                        Log.Debug(GetLocalizedString("need to remove spare sockets").Replace("$$NeedToClose$$", needToClose.ToString(new NumberFormatInfo()).Replace("$$Host$$", host)));
+                    }
+                    foreach (SockIO socket in new IteratorIsolateCollection(sockets.Keys))
+                    {
+                        if (needToClose <= 0)
                             break;
 
                         // remove stale entries
@@ -1219,22 +1216,22 @@ namespace Memcached.ClientLibrary
                         // if past idle time
                         // then close socket
                         // and remove from pool
-                        if((expire.AddMilliseconds(_maxIdle)) < DateTime.Now)
+                        if ((expire.AddMilliseconds(_maxIdle)) < DateTime.Now)
                         {
-							if(Log.IsDebugEnabled)
-							{
-								Log.Debug(GetLocalizedString("removing stale entry"));
-							}
+                            if (Log.IsDebugEnabled())
+                            {
+                                Log.Debug(GetLocalizedString("removing stale entry"));
+                            }
                             try
                             {
                                 socket.TrueClose();
                             }
-                            catch(IOException ioe)
+                            catch (IOException ioe)
                             {
-								if(Log.IsErrorEnabled)
-								{
-									Log.Error(GetLocalizedString("failed to close socket"), ioe);
-								}
+                                if (Log.IsErrorEnabled())
+                                {
+                                    Log.Error(GetLocalizedString("failed to close socket"), ioe);
+                                }
                             }
 
                             sockets.Remove(socket);
@@ -1249,16 +1246,16 @@ namespace Memcached.ClientLibrary
 
             // go through busy sockets and destroy sockets
             // as needed to maintain pool settings
-            foreach(string host in _busyPool.Keys)
+            foreach (string host in _busyPool.Keys)
             {
                 Hashtable sockets = (Hashtable)_busyPool[host];
-				if(Log.IsDebugEnabled)
-				{
-					Log.Debug(GetLocalizedString("size of busy pool").Replace("$$Host$$", host).Replace("$$Sockets$$", sockets.Count.ToString(new NumberFormatInfo())));
-				}
+                if (Log.IsDebugEnabled())
+                {
+                    Log.Debug(GetLocalizedString("size of busy pool").Replace("$$Host$$", host).Replace("$$Sockets$$", sockets.Count.ToString(new NumberFormatInfo())));
+                }
 
                 // loop through all connections and check to see if we have any hung connections
-                foreach(SockIO socket in new IteratorIsolateCollection(sockets.Keys))
+                foreach (SockIO socket in new IteratorIsolateCollection(sockets.Keys))
                 {
                     // remove stale entries
                     DateTime hungTime = (DateTime)sockets[socket];
@@ -1266,22 +1263,22 @@ namespace Memcached.ClientLibrary
                     // if past max busy time
                     // then close socket
                     // and remove from pool
-                    if((hungTime.AddMilliseconds(_maxBusyTime)) < DateTime.Now)
+                    if ((hungTime.AddMilliseconds(_maxBusyTime)) < DateTime.Now)
                     {
-						if(Log.IsErrorEnabled)
-						{
-							Log.Error(GetLocalizedString("removing hung connection").Replace("$$Time$$", (new TimeSpan(DateTime.Now.Ticks - hungTime.Ticks).TotalMilliseconds).ToString(new NumberFormatInfo())));
-						}
+                        if (Log.IsErrorEnabled())
+                        {
+                            Log.Error(GetLocalizedString("removing hung connection").Replace("$$Time$$", (new TimeSpan(DateTime.Now.Ticks - hungTime.Ticks).TotalMilliseconds).ToString(new NumberFormatInfo())));
+                        }
                         try
                         {
                             socket.TrueClose();
                         }
-                        catch(IOException ioe)
+                        catch (IOException ioe)
                         {
-							if(Log.IsErrorEnabled)
-							{
-								Log.Error(GetLocalizedString("failed to close socket"), ioe);
-							}
+                            if (Log.IsErrorEnabled())
+                            {
+                                Log.Error(GetLocalizedString("failed to close socket"), ioe);
+                            }
                         }
 
                         sockets.Remove(socket);
@@ -1289,10 +1286,10 @@ namespace Memcached.ClientLibrary
                 }
             }
 
-			if(Log.IsDebugEnabled)
-			{
-				Log.Debug(GetLocalizedString("end self maintenance"));
-			}
+            if (Log.IsDebugEnabled())
+            {
+                Log.Debug(GetLocalizedString("end self maintenance"));
+            }
         }
 
         /// <summary>
@@ -1339,7 +1336,7 @@ namespace Memcached.ClientLibrary
             /// </summary>
             private void Maintain()
             {
-                while(!_stopThread)
+                while (!_stopThread)
                 {
                     try
                     {
@@ -1347,17 +1344,17 @@ namespace Memcached.ClientLibrary
 
                         // if pool is initialized, then
                         // run the maintenance method on itself
-                        if(_pool.Initialized)
+                        if (_pool.Initialized)
                             _pool.SelfMaintain();
 
                     }
-                    catch(ThreadInterruptedException) { } //MaxM: When SockIOPool.getInstance().shutDown() is called, this exception will be raised and can be safely ignored.
-                    catch(Exception ex)
+                    catch (ThreadInterruptedException) { } //MaxM: When SockIOPool.getInstance().shutDown() is called, this exception will be raised and can be safely ignored.
+                    catch (Exception ex)
                     {
-						if(Log.IsErrorEnabled)
-						{
-							Log.Error(GetLocalizedString("maintenance thread choked"), ex);
-						}
+                        if (Log.IsErrorEnabled())
+                        {
+                            Log.Error(GetLocalizedString("maintenance thread choked"), ex);
+                        }
                     }
                 }
             }
@@ -1372,10 +1369,10 @@ namespace Memcached.ClientLibrary
             }
         }
 
-		private static ResourceManager _resourceManager = new ResourceManager("Memcached.ClientLibrary.StringMessages", typeof(SockIOPool).Assembly);
-		private static string GetLocalizedString(string key)
-		{
-			return _resourceManager.GetString(key);
-		}
+        private static ResourceManager _resourceManager = new ResourceManager("Memcached.ClientLibrary.StringMessages", typeof(SockIOPool).Assembly);
+        private static string GetLocalizedString(string key)
+        {
+            return _resourceManager.GetString(key);
+        }
     }
 }
