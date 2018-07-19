@@ -1,7 +1,5 @@
 # Memcached.ClientLibrary
 
 a .net core memcache driver named "Memcached.ClientLibrary"
-
-by wanghongqi
-longtianyu1@163.com
+ 去掉log4依赖，改为使用LibLog，支持多个日志框架
 
