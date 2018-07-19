@@ -8,3 +8,4 @@
 /ClassLibrary1.Test/obj
 /Memcached.ClientLibrary/bin/Debug/netstandard2.0
 /Memcached.ClientLibrary/obj
+*.user
